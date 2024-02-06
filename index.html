@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXIS LED Patterns</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+
+  canvas {
+    display: block;
+    margin: 10px auto;
+    border: 1px solid #ccc;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #ffcc33;
+    color: black;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #bd9827;
+  }
+
+  pre {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+<h1>AXIS LED Patterns</h1>
+<div class="container">
+  <label for="patternSelect">Load Pattern:</label>
+  <select id="patternSelect" onchange="loadPattern()">
+    <option value="10GigabitEthernet">10 Gigabit Ethernet</option>
+<option value="100GigabitEthernet">100 Gigabit Ethernet</option>
+<option value="accessDenied">Access Denied</option>
+<option value="accessGranted">Access Granted</option>
+<option value="activeCall">Active Call</option>
+<option value="activeNetworkTransmission">Active Network Transmission</option>
+<option value="alarm">Alarm</option>
+<option value="bluetoothActive">Bluetooth Active</option>
+<option value="bootDown">Boot Down</option>
+<option value="bootingUp">Booting Up</option>
+<option value="buttonAvailable">Button Available</option>
+<option value="callAccepted">Call Accepted</option>
+<option value="callDenied">Call Denied</option>
+<option value="cameraIdle">Camera Idle</option>
+<option value="connectionNormalOperation">Connection Normal Operation</option>
+<option value="connectionUnavailable">Connection Unavailable</option>
+<option value="deviceOn">Device On</option>
+<option value="error">Error</option>
+<option value="factoryReset">Factory Reset</option>
+<option value="failedUpgrade">Failed Upgrade</option>
+<option value="firmwareUpgrade">Firmware Upgrade</option>
+<option value="firmwareUpgradeFailure">Firmware Upgrade Failure</option>
+<option value="fault">Fault</option>
+<option value="hardwareError">Hardware Error</option>
+<option value="idle">Idle</option>
+<option value="incomingCall">Incoming Call</option>
+<option value="incorrectPin">Incorrect PIN</option>
+<option value="inputInformation">Input Information</option>
+<option value="messageNotification">Message Notification</option>
+<option value="micOff">Mic Off</option>
+<option value="micOn">Mic On</option>
+<option value="movementDetected">Movement Detected</option>
+<option value="networkConnectionUnavailable">Network Connection Unavailable</option>
+<option value="ok">OK</option>
+<option value="ongoingUpdate">Ongoing Update</option>
+<option value="openTooLong">Open Too Long</option>
+<option value="overcurrentProtectionTripped">Overcurrent Protection Tripped</option>
+<option value="recording">Recording</option>
+<option value="requirePin">Require PIN</option>
+<option value="retry">Retry</option>
+<option value="soundOff">Sound Off</option>
+<option value="soundOn">Sound On</option>
+<option value="talkDisabled">Talk Disabled</option>
+<option value="talkEnabled">Talk Enabled</option>
+<option value="volumeControl">Volume Control</option>
+<option value="warning">Warning</option>
+<option value="wlanSetupMode">WLAN Setup Mode</option>
+  </select>
+  
+  <label for="loopCount">Loop Count:</label>
+  <input type="number" id="loopCount" value="3" min="1">
+  <label for="onDuration">On Duration (ms):</label>
+  <input type="number" id="onDuration" value="500" min="1">
+  <label for="offDuration">Off Duration (ms):</label>
+  <input type="number" id="offDuration" value="500" min="1">
+  <label for="fadeDuration">Fade Duration (ms):</label>
+  <input type="number" id="fadeDuration" value="1000" min="1">
+  <label for="intensity">Intensity:</label>
+  <input type="range" id="intensity" value="100" min="0" max="100">
+  <label for="red">Red:</label>
+  <input type="number" id="red" value="255" min="0" max="255">
+  <label for="green">Green:</label>
+  <input type="number" id="green" value="0" min="0" max="255">
+  <label for="blue">Blue:</label>
+  <input type="number" id="blue" value="0" min="0" max="255">
+  <button onclick="startAnimation()">Start Animation</button>
+
+  <canvas id="patternCanvas" width="300" height="100"></canvas>
+  <button onclick="exportCCode()">Generate code example</button>
+  <pre id="codeSnippet"></pre>
+</div>
+
+<script>
+const canvas = document.getElementById('patternCanvas');
+const ctx = canvas.getContext('2d');
+const loopCountInput = document.getElementById('loopCount');
+const onDurationInput = document.getElementById('onDuration');
+const offDurationInput = document.getElementById('offDuration');
+const fadeDurationInput = document.getElementById('fadeDuration');
+const intensityInput = document.getElementById('intensity');
+const redInput = document.getElementById('red');
+const greenInput = document.getElementById('green');
+const blueInput = document.getElementById('blue');
+
+function loadPattern() {
+  const patternSelect = document.getElementById('patternSelect');
+  const selectedPattern = patternSelect.value;
+
+  switch (selectedPattern) {
+    case 'micOn':
+      setPatternValues(3, 500, 500, 1000, 100, 255, 0, 0); // Flash Red (Mic On)
+      break;
+    case 'micOff':
+      setPatternValues(1, 1000, 500, 500, 50, 0, 0, 0); // Slow Blink Off (Mic Off)
+      break;
+    case 'recording':
+      setPatternValues(5, 300, 300, 500, 80, 0, 0, 255); // Fast Blink Blue (Recording)
+      break;
+    case 'bootingUp':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 255, 0); // Flash Yellow (Booting Up)
+      break;
+    case 'idle':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 0); // Steady Off (Idle)
+      break;
+    case 'doorLocked':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 0, 0); // Flash Red (Door Locked)
+      break;
+    case 'doorUnlocked':
+      setPatternValues(2, 500, 500, 1000, 100, 0, 255, 0); // Flash Green (Door Unlocked)
+      break;
+    case 'accessGranted':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 0); // Steady Green (Access Granted)
+      break;
+    case 'accessDenied':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 0); // Steady Red (Access Denied)
+      break;
+    case 'openTooLong':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 255); // Steady Purple (Open Too Long)
+      break;
+    case 'doorPreAlarm':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 0, 255); // Flash Purple (Door Pre-Alarm)
+      break;
+    case 'alarm':
+      setPatternValues(1, 200, 200, 100, 100, 255, 0, 0); // Steady Red (Alarm)
+      break;
+    case 'cardRequired':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 255); // Steady Blue (Card Required)
+      break;
+    case 'requirePin':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 0); // Steady Yellow (Require PIN)
+      break;
+    case 'retry':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 255, 255); // Flash White (Retry)
+      break;
+    case 'ok':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 255); // Steady Cyan (OK)
+      break;
+    case 'fault':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 0); // Steady Yellow (Fault)
+      break;
+    case 'error':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 0, 0); // Flash Red (Error)
+      break;
+    case 'warning':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 255); // Steady White (Warning)
+      break;
+    case 'movementDetected':
+      setPatternValues(3, 500, 500, 1000, 100, 0, 255, 255); // Flash Cyan (Movement Detected)
+      break;
+    case 'incorrectPin':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 0, 255); // Flash Purple (Incorrect PIN)
+      break;
+    case 'inputInformation':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 0); // Steady Green (Input Information)
+      break;
+    case 'bluetoothActive':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 255); // Steady Purple (Bluetooth Active)
+      break;
+    case 'deviceOn':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 255); // Steady Blue (Device On)
+      break;
+    case 'buttonAvailable':
+      setPatternValues(2, 500, 500, 1000, 100, 0, 255, 0); // Flash Green (Button Available)
+      break;
+    case 'bootDown':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 255); // Steady White (Boot Down)
+      break;
+    case 'messageNotification':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 0); // Steady Off (Message Notification)
+      break;
+    case 'volumeControl':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 0, 0); // Flash Red (Volume Control)
+      break;
+    case 'talkEnabled':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 255); // Steady Blue (Talk Enabled)
+      break;
+    case 'talkDisabled':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 255); // Steady Purple (Talk Disabled)
+      break;
+    case 'ongoingUpdate':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 0); // Steady Yellow (Ongoing Update)
+      break;
+    case 'callAccepted':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 255); // Steady Cyan (Call Accepted)
+      break;
+    case 'callDenied':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 255); // Steady White (Call Denied)
+      break;
+    case 'activeCall':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 0); // Steady Off (Active Call)
+      break;
+    case 'soundOn':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 0); // Steady Red (Sound On)
+      break;
+    case 'soundOff':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 0); // Steady Green (Sound Off)
+      break;
+    case 'incomingCall':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 255); // Steady White (Incoming Call)
+      break;
+      case '10GigabitEthernet':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 255); // Steady Cyan (10 Gigabit Ethernet)
+      break;
+    case '100GigabitEthernet':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 255); // Steady Blue (100 Gigabit Ethernet)
+      break;
+    case 'accessDenied':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 0); // Steady Red (Access Denied)
+      break;
+    case 'accessGranted':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 0); // Steady Green (Access Granted)
+      break;
+    case 'activeCall':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 0); // Steady Off (Active Call)
+      break;
+    case 'alarm':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 0); // Steady Red (Alarm)
+      break;
+    case 'bluetoothActive':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 255); // Steady Purple (Bluetooth Active)
+      break;
+    case 'bootDown':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 255); // Steady White (Boot Down)
+      break;
+    case 'bootingUp':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 255, 0); // Flash Yellow (Booting Up)
+      break;
+    case 'buttonAvailable':
+      setPatternValues(2, 500, 500, 1000, 100, 0, 255, 0); // Flash Green (Button Available)
+      break;
+    case 'callAccepted':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 255, 255); // Steady Cyan (Call Accepted)
+      break;
+    case 'callDenied':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 255); // Steady White (Call Denied)
+      break;
+    case 'cameraIdle':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 0); // Steady Off (Camera Idle)
+      break;
+      case 'connectionNormalOperation':
+      setPatternValues(1, 10000, 0, 1000, 100, 0, 255, 0); // Steady Green for 10 seconds (Connection Normal Operation)
+      break;
+    case 'firmwareUpgrade':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 255, 0); // Flash Yellow (Firmware Upgrade)
+      break;
+    case 'networkConnectionUnavailable':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 0); // Steady Red (Network Connection Unavailable)
+      break;
+    case 'firmwareUpgradeFailure':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 0, 0); // Flash Red (Firmware Upgrade Failure)
+      break;
+    case 'connectionUnavailable':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 0); // Steady Red (Connection Unavailable)
+      break;
+    case 'factoryReset':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 255, 255); // Flash White (Factory Reset)
+      break;
+    case 'overcurrentProtectionTripped':
+      setPatternValues(3, 500, 500, 1000, 100, 255, 0, 255); // Flash Purple (Overcurrent Protection Tripped)
+      break;
+    case 'activeNetworkTransmission':
+      setPatternValues(1, 1000, 1000, 1000, 100, 0, 0, 255); // Steady Blue (Active Network Transmission)
+      break;
+    case 'hardwareError':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 0, 0); // Steady Red (Hardware Error)
+      break;
+    case 'failedUpgrade':
+      setPatternValues(2, 500, 500, 1000, 100, 255, 0, 0); // Flash Red (Failed Upgrade)
+      break;
+    case 'wlanSetupMode':
+      setPatternValues(1, 1000, 1000, 1000, 100, 255, 255, 0); // Steady Yellow (WLAN Setup Mode)
+      break;
+    default:
+      break;
+  }
+}
+
+
+
+
+function setPatternValues(loopCount, onDuration, offDuration, fadeDuration, intensity, red, green, blue) {
+  loopCountInput.value = loopCount;
+  onDurationInput.value = onDuration;
+  offDurationInput.value = offDuration;
+  fadeDurationInput.value = fadeDuration;
+  intensityInput.value = intensity;
+  redInput.value = red;
+  greenInput.value = green;
+  blueInput.value = blue;
+}
+
+function startAnimation() {
+  let loopCount = parseInt(loopCountInput.value);
+  const onDuration = parseInt(onDurationInput.value);
+  const offDuration = parseInt(offDurationInput.value);
+  const fadeDuration = parseInt(fadeDurationInput.value);
+  const intensity = parseInt(intensityInput.value) / 100;
+  const red = parseInt(redInput.value);
+  const green = parseInt(greenInput.value);
+  const blue = parseInt(blueInput.value);
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Calculate LED width and height
+  const ledWidth = canvas.width / loopCount;
+  const ledHeight = canvas.height;
+  
+  // Start animation loop
+  let isOn = false;
+  let currentIntensity = 0;
+  let currentRed = 0;
+  let currentGreen = 0;
+  let currentBlue = 0;
+  let animationFrame;
+  
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (isOn) {
+      ctx.fillStyle = `rgba(${currentRed}, ${currentGreen}, ${currentBlue}, ${currentIntensity})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    animationFrame = requestAnimationFrame(animate);
+  }
+  
+  function startLoop() {
+    if (loopCount <= 0) {
+      cancelAnimationFrame(animationFrame);
+      return;
+    }
+    
+    isOn = true;
+    currentIntensity = 0;
+    currentRed = red;
+    currentGreen = green;
+    currentBlue = blue;
+    
+    animate();
+    
+    // Fade up
+    const fadeStep = intensity / (fadeDuration / 10);
+    const fadeInterval = setInterval(() => {
+      currentIntensity += fadeStep;
+      if (currentIntensity >= intensity) {
+        clearInterval(fadeInterval);
+        setTimeout(() => {
+          // Fade down
+          const fadeStep = currentIntensity / (fadeDuration / 10);
+          const fadeInterval = setInterval(() => {
+            currentIntensity -= fadeStep;
+            if (currentIntensity <= 0) {
+              clearInterval(fadeInterval);
+              isOn = false;
+              setTimeout(() => {
+                loopCount--;
+                startLoop();
+              }, offDuration);
+            }
+          }, 10);
+        }, onDuration);
+      }
+    }, 10);
+  }
+  
+  startLoop();
+}
+
+function exportCCode() {
+  const loopCount = loopCountInput.value;
+  const onDuration = onDurationInput.value;
+  const offDuration = offDurationInput.value;
+  const fadeDuration = fadeDurationInput.value;
+  const intensity = intensityInput.value;
+  const red = redInput.value;
+  const green = greenInput.value;
+  const blue = blueInput.value;
+
+  const fadeUpSteps = Math.round(intensity / 10);
+  const fadeDownSteps = Math.round(intensity / 10);
+
+  const cCode = `void loop() {
+  for (int c = 0; c < ${loopCount}; c++) {
+    // Fade up
+    for (int i = 0; i <= ${intensity}; i += ${fadeUpSteps}) {
+      analogWrite(LED_PIN_RED,${red});
+      analogWrite(LED_PIN_GREEN,(${green});
+      analogWrite(LED_PIN_BLUE,map(${blue});
+      delay(${fadeDuration} / ${intensity});
+    }
+
+    delay(${onDuration});
+
+    // Fade down
+    for (int i = ${intensity}; i >= 0; i -= ${fadeDownSteps}) {
+      analogWrite(LED_PIN_RED, map(${red}, 0, 255, 0, 1023));
+      analogWrite(LED_PIN_GREEN, map(${green}, 0, 255, 0, 1023));
+      analogWrite(LED_PIN_BLUE, map(${blue}, 0, 255, 0, 1023));
+      delay(${fadeDuration} / ${intensity});
+    }
+
+    delay(${offDuration});
+  }
+}`;
+
+  document.getElementById('codeSnippet').innerText = cCode;
+}
+</script>
+</body>
+</html>
